@@ -170,8 +170,7 @@ def main(keyword, coordinates):
         return None
 
     # Konversi menjadi JSON dan tampilkan
-    json_output = json.dumps(data, indent=2)
-    print(json_output)
+    json_output = json.dumps(result, indent=2)
 
     # Tutup WebDriver
     driver.quit()
