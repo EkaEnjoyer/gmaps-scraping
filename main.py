@@ -36,20 +36,24 @@ def main(keyword, coordinates):
     time.sleep(delay)
 
     try:
-        for i in range(4):
-            jslog_value = f'//div[@class="Nv2PK THOPZb CpccDe "][{i+1}]'
-            result_element = driver.find_element(By.XPATH, jslog_value)
-            result_href = result_element.get_attribute("href")
+        # for i in range(4):
+        #     jslog_value = f'//div[@class="Nv2PK THOPZb CpccDe "][{i+1}]'
+        #     result_element = driver.find_element(By.XPATH, jslog_value)
+        #     result_href = result_element.get_attribute("href")
 
-            # Buka tautan di tab baru
+        #     # Buka tautan di tab baru
+        #     actions = ActionChains(driver)
+        #     actions.key_down(Keys.CONTROL).click(result_element).key_up(Keys.CONTROL).perform()
+
+        results_div = driver.find_element(By.XPATH, f'//div[contains(@aria-label, "Results for {keyword}")]')
+        anchor_tags = results_div.find_elements(By.XPATH, './/a')
+
+        # Open each anchor tag in a new tab
+        for anchor_tag in anchor_tags:
+            # Open a new tab
             actions = ActionChains(driver)
-            actions.key_down(Keys.CONTROL).click(result_element).key_up(Keys.CONTROL).perform()
-
-            # Tunggu tab baru selesai load
-            time.sleep(delay)
-
-        # Tunggu sebentar untuk memastikan semua tab terbuka
-        time.sleep(delay + 3)
+            actions.key_down(Keys.CONTROL).click(anchor_tag).key_up(Keys.CONTROL).perform()
+            time.sleep(1)
 
     except Exception as e:
         print(e)
@@ -124,3 +128,7 @@ def main(keyword, coordinates):
 
     # Tutup WebDriver
     driver.quit()
+
+keyword = "SF Pizza"
+location = "37.7749, -122.4194"
+main(keyword, location)
