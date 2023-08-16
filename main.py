@@ -14,11 +14,8 @@ driver = webdriver.Chrome()
 driver.get("https://www.google.com/maps")
 
 # Configs
-delay = 7
+delay = 3
 language = "Bahasa Indonesia"
-
-# Result
-result = {"Results": []}
 
 def scrape_data():
     wait = WebDriverWait(driver, delay)
@@ -28,50 +25,35 @@ def scrape_data():
         xpath = "//div[contains(@jslog, '24393;')]"
         element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
         nama_tempat = element.get_attribute("aria-label")
-    except NoSuchElementException:
-        nama_tempat = "information not found"
     except Exception as e:
-        print("Error while locating 'Nama Tempat' element:", e)
-        nama_tempat = "error occurred"
+        nama_tempat = "Information not found"
 
     try:
         rating_element = wait.until(EC.presence_of_element_located((By.XPATH, '//span[@class="ceNzKf"]')))
         label_rating = rating_element.get_attribute("aria-label")
-    except NoSuchElementException:
-        label_rating = "information not found"
     except Exception as e:
-        print("Error while locating 'Rating' element:", e)
-        label_rating = "error occurred"
+        label_rating = "Information not found"
 
     try:
         xpath = "//button[contains(@jslog, '36622;')]"
         element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
         alamat = element.get_attribute("aria-label")
-    except NoSuchElementException:
-        alamat = "information not found"
     except Exception as e:
-        print("Error while locating 'Alamat' element:", e)
-        alamat = "error occurred"
+        alamat = "Information not found"
 
     try:
         xpath = "//button[contains(@jslog, '18491;')]"
         element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
         nomor_telepon = element.get_attribute("aria-label")
-    except NoSuchElementException:
-        nomor_telepon = "information not found"
     except Exception as e:
-        print("Error while locating 'Nomor Telepon' element:", e)
-        nomor_telepon = "error occurred"
+        nomor_telepon = "Information not found"
 
     try:
         xpath = "//a[contains(@jslog, '3443;')]"
         element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
         website = element.get_attribute("aria-label")
-    except NoSuchElementException:
-        website = "information not found"
     except Exception as e:
-        print("Error while locating 'Website' element:", e)
-        website = "error occurred"
+        website = "Information not found"
 
     jam_operasional = []
     try:
@@ -80,11 +62,8 @@ def scrape_data():
         for element, day in zip(jam, days):
             label_jam_operasional = element.get_attribute("aria-label")
             jam_operasional.append({day: label_jam_operasional})
-    except NoSuchElementException:
-        jam_operasional = []
     except Exception as e:
-        print("Error while locating 'Jam Operasional' element:", e)
-        jam_operasional = "error occurred"
+        jam_operasional = "Information not found"
 
     try:
         current_url = driver.current_url
@@ -118,6 +97,9 @@ def scrape_data():
 # Di rename aja function nya kalau butuh
 def main(keyword, coordinates):
 
+    # Result
+    result = {"Results": []}
+
     # Temukan search box 
     search_box = driver.find_element(By.ID, "searchboxinput")
 
@@ -136,45 +118,39 @@ def main(keyword, coordinates):
     # Tunggu sampai map selesai load
     time.sleep(delay)
 
-    try:
-        # Temukan result
-        results_div = driver.find_element(By.CSS_SELECTOR, f'div[aria-label="Hasil untuk {keyword}"]')
-        # Temukan semua anchor tag di dalam result
-        anchor_tags = results_div.find_elements(By.XPATH, './/a')
+    # Temukan result
+    results_div = driver.find_element(By.CSS_SELECTOR, f'div[aria-label="Hasil untuk {keyword}"]')
+    # Temukan semua anchor tag di dalam result
+    anchor_tags = results_div.find_elements(By.XPATH, './/a')
 
-        # Filter semua anchor tag hanya yang memiliki google.com/maps
-        filtered_google_maps_links = []
-        for anchor_tag in anchor_tags:
-            href = anchor_tag.get_attribute("href")
-            if href and "google.com/maps" in href:
-                filtered_google_maps_links.append(anchor_tag)
+    # Filter semua anchor tag hanya yang memiliki google.com/maps
+    filtered_google_maps_links = []
+    for anchor_tag in anchor_tags:
+        href = anchor_tag.get_attribute("href")
+        if href and "google.com/maps" in href:
+            filtered_google_maps_links.append(anchor_tag)
 
-        # Buka semua anchor tag yang ditemukan
-        for anchor_tag in filtered_google_maps_links:
-            # Buka di tab baru
-            actions = ActionChains(driver)
-            actions.key_down(Keys.CONTROL).click(anchor_tag).key_up(Keys.CONTROL).perform()
-            time.sleep(1)
+    # Buka semua anchor tag yang ditemukan
+    for anchor_tag in filtered_google_maps_links:
+        # Buka di tab baru
+        actions = ActionChains(driver)
+        actions.key_down(Keys.CONTROL).click(anchor_tag).key_up(Keys.CONTROL).perform()
+        time.sleep(1)
 
-        for links in anchor_tags:
-            driver.switch_to.window(driver.window_handles[-1])
-            # Push scrape_data to result
-            result["Results"].append(scrape_data())
-            print(result)
-            time.sleep(delay)
-            driver.close()
-
-    except Exception as e:
-        print(e)
-        driver.quit()
-        return None
+    for window_handle in driver.window_handles[1:]:
+        driver.switch_to.window(window_handle)
+        # Push scrape_data to result
+        result["Results"].append(scrape_data())
+        time.sleep(delay)
+        driver.close()
 
     # Konversi menjadi JSON dan tampilkan
-    json_output = json.dumps(result, indent=2)
+    with open('scraped_data.json', 'w') as json_file:
+            json.dump(result, json_file, indent=2)
 
     # Tutup WebDriver
     driver.quit()
 
-keyword = "Police"
-location = "37.7749, -122.4194"
+keyword = "BNI"
+location = "-7.785228, 110.390144"
 main(keyword, location)
